@@ -1,0 +1,54 @@
+import boto3
+import time
+
+import pandas as pd
+import numpy as np
+
+import os
+import requests
+
+import datetime
+
+# Set up Athena parameters
+region = 'us-east-1' 
+output_s3_bucket = 's3://BUCKET-NAME/'  # Replace with your S3 bucket for query results
+DATABASE_NAME = "DATABASE" # replace with database
+athena_client = boto3.client('athena', region_name='region')
+WORKGROUP_NAME = 'primary' # replace if necessary 
+
+# Start query execution
+def extract_data(query):
+    response = athena_client.start_query_execution(
+        QueryString=query,
+        QueryExecutionContext={'Database': DATABASE_NAME},
+        ResultConfiguration={'OutputLocation': output_s3_bucket},
+        WorkGroup = WORKGROUP_NAME
+    )
+    
+    # Get the query execution ID
+    query_execution_id = response['QueryExecutionId']
+    print(f"Query execution ID: {query_execution_id}")
+    
+    # Wait for the query to complete
+    while True:
+        query_status = athena_client.get_query_execution(QueryExecutionId=query_execution_id)
+        query_state = query_status['QueryExecution']['Status']['State']
+        
+        if query_state in ['SUCCEEDED', 'FAILED']:
+            break
+        # print("Query is running...")
+        # time.sleep(1)
+    
+    # Check if the query succeeded
+    if query_state == 'SUCCEEDED':
+        print("Query succeeded!")
+    else:
+        print(f"Query failed: {query_status['QueryExecution']['Status']['StateChangeReason']}")
+        exit()
+    
+    # Construct S3 path to results
+    result_file_path = f"{output_s3_bucket}{query_execution_id}.csv"
+    
+    # Use pandas to load directly from S3
+    df = pd.read_csv(result_file_path)
+    return df
