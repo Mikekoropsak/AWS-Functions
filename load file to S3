@@ -1,0 +1,25 @@
+import boto3
+
+# Set up Athena parameters
+region = 'us-east-1'
+output_s3_bucket = 's3://BUCKET-NAME/'  # Replace with your S3 bucket for query results
+DATABASE_NAME = "DATABASE NAME" # replace with desired database
+athena_client = boto3.client('athena', region_name='region')
+WORKGROUP_NAME = 'primary' # change if necessary
+
+
+import boto3
+
+s3 = boto3.client('s3')
+
+# Local file path in your SageMaker environment
+local_file = 'REPLACE WITH FILE'
+
+# S3 bucket and target key (path in bucket)
+bucket_name = 'UPDATE WITH BUCKET'
+s3_key = 'asthma_cohort_pts/asthma_cohort_pts.csv' # Folder name/file name
+
+# Upload the file
+s3.upload_file(local_file, bucket_name, s3_key)
+
+print(f"Uploaded {local_file} to s3://{bucket_name}/{s3_key}")
