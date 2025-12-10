@@ -1,0 +1,39 @@
+### Script for compressing multiple files
+
+$inDir  = "input_directory"     # Example: D:\mike
+$outDir = "output_directory"    # Example: D:\mike\files
+$ext = "csv"                    # or "txt", "log", etc.
+$filter = "*.$ext"
+
+Get-ChildItem $inDir -Filter $filter | ForEach-Object {
+    & "C:\Program Files\7-Zip\7z.exe" a `
+        ($outDir + $_.BaseName + ".$ext.zip") `
+        $_.FullName
+}
+
+
+### Syncing to S3 buckets
+## --dryrun provides a test to see what happens, remove for actual execution of code
+## Need to replace location after KMS, to find KMS follow below:
+1. Go to AWS Console
+2. Open KMS (Key Management Service)
+3. Click Customer managed keys
+4. Select the key you want
+5. Copy the Key ARN from the details panel
+
+# Option 1
+aws s3 sync "location_of_files" "BUCKET_NAME/FOLDER/FINAL_FOLDER/" --sse aws:kms --sse-kms-key-id arn:aws:kms:REGION:ACCOUNT_ID:key/KEY_ID  --dryrun 
+
+# Option 2
+$Src = "FILES_TO_TRANSFER"
+$Dst = "s3://BUCKET_NAME/FOLDER/"
+$Kms = "arn:aws:kms:us-east-1:735867041078:key/a1f9583a-dfb6-46b6-a93b-c6d034f765a6"
+
+aws s3 sync $Src $Dst --sse aws:kms --sse-kms-key-id $Kms --dryrun
+
+### Verifying sync worked
+aws s3 ls $Dst
+
+### Extracting files to environment i.e. sagemaker
+## --recursive will extract all files in bucket location, can be removed to extract a specific file
+aws s3 cp <BUCKET_LOCATION> --recursive
